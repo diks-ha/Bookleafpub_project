@@ -169,9 +169,7 @@ export default function LoginPage() {
 
                         {/* Demo credentials */}
                         <div className="mt-6 pt-5 border-t border-pink-100">
-                            <p className="text-xs text-slate-500 mb-3 text-center font-medium uppercase tracking-wide">
-                                Demo Credentials
-                            </p>
+                           
                             <div className="grid grid-cols-2 gap-2">
                                 <button
                                     type="button"
@@ -188,9 +186,7 @@ export default function LoginPage() {
                                     Admin Login
                                 </button>
                             </div>
-                            <p className="text-xs text-slate-400 text-center mt-2">
-                                Click a button above, then press Sign In
-                            </p>
+                            
                         </div>
                     </div>
                 </div>
