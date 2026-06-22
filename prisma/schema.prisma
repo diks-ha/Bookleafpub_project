@@ -1,0 +1,131 @@
+// Prisma schema for BookLeaf Author Support Portal
+// Provider: PostgreSQL (required for Render/Vercel deployment)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // directUrl is used by Prisma Migrate when DATABASE_URL uses a pooler (e.g. Supabase)
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Users (Authors + Admins) ──────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // bcrypt hashed
+  role      String   @default("author") // "author" | "admin"
+  createdAt DateTime @default(now())
+
+  author          Author?
+  assignedTickets Ticket[]       @relation("AssignedAdmin")
+  internalNotes   InternalNote[]
+
+  @@map("users")
+}
+
+// ─── Authors ───────────────────────────────────────────────────────────────
+
+model Author {
+  id         String   @id @default(uuid())
+  authorCode String   @unique
+  name       String
+  phone      String?
+  city       String?
+  joinedDate DateTime
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  books      Book[]
+  tickets    Ticket[]
+
+  @@map("authors")
+}
+
+// ─── Books ─────────────────────────────────────────────────────────────────
+
+model Book {
+  id                    String    @id @default(uuid())
+  bookCode              String    @unique
+  title                 String
+  isbn                  String
+  genre                 String
+  publicationDate       DateTime?
+  status                String
+  mrp                   Float?
+  authorRoyaltyPerCopy  Float?
+  totalCopiesSold       Int       @default(0)
+  totalRoyaltyEarned    Float     @default(0)
+  royaltyPaid           Float     @default(0)
+  royaltyPending        Float     @default(0)
+  lastRoyaltyPayoutDate DateTime?
+  printPartner          String?
+  availableOn           String    @default("[]") // JSON array as string
+  authorId              String
+  author                Author    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  tickets               Ticket[]
+
+  @@map("books")
+}
+
+// ─── Tickets ───────────────────────────────────────────────────────────────
+
+model Ticket {
+  id           String   @id @default(uuid())
+  ticketNumber String   @unique
+  subject      String
+  description  String
+  status       String   @default("Open")
+  category     String?
+  priority     String?
+  aiCategory   String?
+  aiPriority   String?
+  aiDraft      String?
+
+  authorId     String
+  author       Author  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  bookId       String?
+  book         Book?   @relation(fields: [bookId], references: [id], onDelete: SetNull)
+
+  assignedToId String?
+  assignedTo   User?   @relation("AssignedAdmin", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  responses     TicketResponse[]
+  internalNotes InternalNote[]
+
+  @@map("tickets")
+}
+
+// ─── Ticket Responses (visible to author) ──────────────────────────────────
+
+model TicketResponse {
+  id         String   @id @default(uuid())
+  ticketId   String
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  message    String
+  sentBy     String
+  senderName String
+  createdAt  DateTime @default(now())
+
+  @@map("ticket_responses")
+}
+
+// ─── Internal Notes (not visible to author) ────────────────────────────────
+
+model InternalNote {
+  id        String   @id @default(uuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  note      String
+  adminId   String
+  admin     User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("internal_notes")
+}
